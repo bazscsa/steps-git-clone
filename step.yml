@@ -65,11 +65,6 @@ inputs:
     opts:
       title: "Generate a Formatted (markdown) output file to this path"
       is_expand: true
-  - GIT_CLONE_IS_EXPORT_OUTPUTS:
-    opts:
-      title: "[optional] Is export outputs."
-      is_expand: false
-    default: true
 outputs:
   - GIT_CLONE_COMMIT_HASH:
     opts:

@@ -68,9 +68,8 @@ inputs:
   - GIT_CLONE_IS_EXPORT_OUTPUTS:
     opts:
       title: "[optional] Is export outputs."
-      value: "true"
-      value_options: ["true", "false"]
       is_expand: false
+    value: "true"
 outputs:
   -
     title: "Cloned git commit's commit hash"

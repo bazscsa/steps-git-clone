@@ -1,3 +1,4 @@
+title: "Git Clone"
 name: "Git Clone Repository"
 description: |
   Clones a repository based on the provided inputs.

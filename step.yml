@@ -69,7 +69,7 @@ inputs:
     opts:
       title: "[optional] Is export outputs."
       is_expand: false
-    default: "true"
+    default: true
 outputs:
   -
     title: "Cloned git commit's commit hash"

@@ -33,39 +33,39 @@ inputs:
     opts:
       title: "Git Commit to clone"
       is_expand: true
-  - BITRISE_GIT_TAG
+  - BITRISE_GIT_TAG:
     opts:
       title: "Git Tag to clone"
       is_expand: true
-  - BITRISE_GIT_BRANCH
+  - BITRISE_GIT_BRANCH:
     opts:
       title: "Git Branch to clone"
       is_expand: true
-  - BITRISE_PULL_REQUEST
+  - BITRISE_PULL_REQUEST:
     opts:
       title: "Pull request ID on GitHub"
       is_expand: true
-  - BITRISE_SOURCE_DIR
+  - BITRISE_SOURCE_DIR:
     opts:
       title: "Clone destination (local) directory path"
       is_expand: true
-  - AUTH_USER
+  - AUTH_USER:
     opts:
       title: "Auth: Username"
       is_expand: false
-  - AUTH_PASSWORD
+  - AUTH_PASSWORD:
     opts:
       title: "Auth: Password"
       is_expand: false
-  - AUTH_SSH_PRIVATE_KEY
+  - AUTH_SSH_PRIVATE_KEY:
     opts:
       title: "Auth: SSH private key - without a passphrase!"
       is_expand: true
-  - GIT_CLONE_FORMATTED_OUTPUT_FILE_PATH
+  - GIT_CLONE_FORMATTED_OUTPUT_FILE_PATH:
     opts:
       title: "Generate a Formatted (markdown) output file to this path"
       is_expand: true
-  - GIT_CLONE_IS_EXPORT_OUTPUTS
+  - GIT_CLONE_IS_EXPORT_OUTPUTS:
     opts:
       title: "[optional] Is export outputs."
       value: "true"

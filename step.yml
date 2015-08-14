@@ -71,24 +71,24 @@ inputs:
       is_expand: false
     default: true
 outputs:
-  -
-    title: "Cloned git commit's commit hash"
-    mapped_to: GIT_CLONE_COMMIT_HASH
-  -
-    title: "Cloned git commit's message subject"
-    mapped_to: GIT_CLONE_COMMIT_MESSAGE_SUBJECT
-  -
-    title: "Cloned git commit's message body"
-    mapped_to: GIT_CLONE_COMMIT_MESSAGE_BODY
-  -
-    title: "Cloned git commit's author name"
-    mapped_to: GIT_CLONE_COMMIT_AUTHOR_NAME
-  -
-    title: "Cloned git commit's author email address"
-    mapped_to: GIT_CLONE_COMMIT_AUTHOR_EMAIL
-  -
-    title: "Cloned git commit's committer name"
-    mapped_to: GIT_CLONE_COMMIT_COMMITER_NAME
-  -
-    title: "Cloned git commit's committer email"
-    mapped_to: GIT_CLONE_COMMIT_COMMITER_EMAIL
+  - GIT_CLONE_COMMIT_HASH
+    opts:
+      title: "Cloned git commit's commit hash"
+  - GIT_CLONE_COMMIT_MESSAGE_SUBJECT
+    opts:
+      title: "Cloned git commit's message subject"
+  - GIT_CLONE_COMMIT_MESSAGE_BODY
+    opts:
+      title: "Cloned git commit's message body"
+  - GIT_CLONE_COMMIT_AUTHOR_NAME
+    opts:
+      title: "Cloned git commit's author name"
+  - GIT_CLONE_COMMIT_AUTHOR_EMAIL
+    opts:
+      title: "Cloned git commit's author email address"
+  - GIT_CLONE_COMMIT_COMMITER_NAME
+    opts:
+      title: "Cloned git commit's committer name"
+  - GIT_CLONE_COMMIT_COMMITER_EMAIL
+    opts:
+      title: "Cloned git commit's committer email"

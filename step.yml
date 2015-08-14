@@ -1,4 +1,5 @@
 title: "Git Clone"
+summary: "Git Clone Repository"
 name: "Git Clone Repository"
 description: |
   Clones a repository based on the provided inputs.

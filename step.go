@@ -56,25 +56,27 @@ func envmanAdd(key, value string) error {
 	return cmd.Run()
 }
 
-func doGitInit() error {
+func doGitInit(cloneIntoDir string) error {
 	cmd := exec.Command("git", "init")
 	cmd.Stdin = nil
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Dir = cloneIntoDir
 
 	return cmd.Run()
 }
 
-func doGitAddRemote(repositoryURL string) error {
+func doGitAddRemote(cloneIntoDir, repositoryURL string) error {
 	cmd := exec.Command("git", "remote", "add", "origin", repositoryURL)
 	cmd.Stdin = nil
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Dir = cloneIntoDir
 
 	return cmd.Run()
 }
 
-func doGitFetch(pullRequestID, gitCheckoutParam string) error {
+func doGitFetch(cloneIntoDir, pullRequestID, gitCheckoutParam string) error {
 	args := []string{"fetch"}
 	if pullRequestID != "" {
 		args = append(args, "origin", "pull/"+pullRequestID+"/merge:"+gitCheckoutParam)
@@ -84,36 +86,40 @@ func doGitFetch(pullRequestID, gitCheckoutParam string) error {
 	cmd.Stdin = nil
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Dir = cloneIntoDir
 
 	return cmd.Run()
 }
 
-func doGitCheckout(gitCheckoutParam string) error {
+func doGitCheckout(cloneIntoDir, gitCheckoutParam string) error {
 	cmd := exec.Command("git", "checkout", gitCheckoutParam)
 	cmd.Stdin = nil
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Dir = cloneIntoDir
 
 	return cmd.Run()
 }
 
-func doGitSubmodelueUpdate() error {
+func doGitSubmodelueUpdate(cloneIntoDir string) error {
 	cmd := exec.Command("git", "submodule", "update", "--init", "--recursive")
 	cmd.Stdin = nil
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Dir = cloneIntoDir
 
 	return cmd.Run()
 }
 
-func getGitLog(formatParam string) (string, error) {
+func getGitLog(cloneIntoDir, formatParam string) (string, error) {
 	outBuffer := bytes.Buffer{}
 	errBuffer := bytes.Buffer{}
 
-	cmd := exec.Command("git", "log", "-1", "--format", formatParam)
+	cmd := exec.Command("git", "log", "-1", "--format="+formatParam)
 	cmd.Stdin = nil
 	cmd.Stdout = io.Writer(&outBuffer)
 	cmd.Stderr = io.Writer(&errBuffer)
+	cmd.Dir = cloneIntoDir
 
 	if err := cmd.Run(); err != nil {
 		return "", fmt.Errorf("git log failed, err: %s, details: %s", err, errBuffer.String())
@@ -134,66 +140,66 @@ func doGitClone(cloneIntoDir, repositoryURL, pullRequestID, gitCheckoutParam str
 		return fmt.Errorf("Failed to create the clone_destination_dir at: %s", cloneIntoDir)
 	}
 
-	if err := doGitInit(); err != nil {
+	if err := doGitInit(cloneIntoDir); err != nil {
 		return fmt.Errorf("Could not init git repository, err: %s", cloneIntoDir)
 	}
 
-	if err := doGitAddRemote(repositoryURL); err != nil {
+	if err := doGitAddRemote(cloneIntoDir, repositoryURL); err != nil {
 		return fmt.Errorf("Could not add remote, err: %s", err)
 	}
 
-	if err := doGitFetch(pullRequestID, gitCheckoutParam); err != nil {
+	if err := doGitFetch(cloneIntoDir, pullRequestID, gitCheckoutParam); err != nil {
 		return fmt.Errorf("Could not fetch from repository, err: %s", err)
 	}
 
 	if gitCheckoutParam != "" {
-		if err := doGitCheckout(gitCheckoutParam); err != nil {
+		if err := doGitCheckout(cloneIntoDir, gitCheckoutParam); err != nil {
 			return fmt.Errorf("Could not do checkout (%s), err: %s", gitCheckoutParam, err)
 		}
 
-		if err := doGitSubmodelueUpdate(); err != nil {
+		if err := doGitSubmodelueUpdate(cloneIntoDir); err != nil {
 			return fmt.Errorf("Could not fetch from submodule repositories, err: %s", err)
 		}
 
 		// git clone stats
 		commitStats := map[string]string{}
-		commitHashStr, err := getGitLog("%H")
+		commitHashStr, err := getGitLog(cloneIntoDir, "%H")
 		if err != nil {
 			fmt.Println(err)
 		}
 		commitStats["GIT_CLONE_COMMIT_HASH"] = commitHashStr
 
-		commitMsgSubjectStr, err := getGitLog("%s")
+		commitMsgSubjectStr, err := getGitLog(cloneIntoDir, "%s")
 		if err != nil {
 			fmt.Println(err)
 		}
 		commitStats["GIT_CLONE_COMMIT_MESSAGE_SUBJECT"] = commitMsgSubjectStr
 
-		commitMsgBodyStr, err := getGitLog("%b")
+		commitMsgBodyStr, err := getGitLog(cloneIntoDir, "%b")
 		if err != nil {
 			fmt.Println(err)
 		}
 		commitStats["GIT_CLONE_COMMIT_MESSAGE_BODY"] = commitMsgBodyStr
 
-		commitAuthorNameStr, err := getGitLog("%an")
+		commitAuthorNameStr, err := getGitLog(cloneIntoDir, "%an")
 		if err != nil {
 			fmt.Println(err)
 		}
 		commitStats["GIT_CLONE_COMMIT_AUTHOR_NAME"] = commitAuthorNameStr
 
-		commitAuthorEmailStr, err := getGitLog("%ae")
+		commitAuthorEmailStr, err := getGitLog(cloneIntoDir, "%ae")
 		if err != nil {
 			fmt.Println(err)
 		}
 		commitStats["GIT_CLONE_COMMIT_AUTHOR_EMAIL"] = commitAuthorEmailStr
 
-		commitCommiterNameStr, err := getGitLog("%cn")
+		commitCommiterNameStr, err := getGitLog(cloneIntoDir, "%cn")
 		if err != nil {
 			fmt.Println(err)
 		}
 		commitStats["GIT_CLONE_COMMIT_COMMITER_NAME"] = commitCommiterNameStr
 
-		commitCommiterEmailStr, err := getGitLog("%ce")
+		commitCommiterEmailStr, err := getGitLog(cloneIntoDir, "%ce")
 		if err != nil {
 			fmt.Println(err)
 		}

@@ -26,17 +26,23 @@ func validateRequiredInput(key string) (string, error) {
 	return value, nil
 }
 
-func writePrivateKeyToFile(authSSHPrivateKey string) (string, error) {
-	userHome := os.Getenv("HOME")
-	if userHome == "" {
-		return "", errors.New("Faild to get HOME")
+func genericIsPathExists(pth string) (os.FileInfo, bool, error) {
+	if pth == "" {
+		return nil, false, errors.New("No path provided")
 	}
+	fileInf, err := os.Stat(pth)
+	if err == nil {
+		return fileInf, true, nil
+	}
+	if os.IsNotExist(err) {
+		return nil, false, nil
+	}
+	return fileInf, false, err
+}
 
-	authSSHPrivateKeyPth := path.Join(userHome, ".ssh", "bitrise")
-	if err := WriteStringToFile(authSSHPrivateKeyPth, authSSHPrivateKey); err != nil {
-		return "", err
-	}
-	return authSSHPrivateKeyPth, nil
+func isPathExists(pth string) (bool, error) {
+	_, isExists, err := genericIsPathExists(pth)
+	return isExists, err
 }
 
 func envmanAdd(key, value string) error {
@@ -59,14 +65,7 @@ func doGitInit() error {
 	return cmd.Run()
 }
 
-func doGitAddRemote(sshNoPromtFilePth, repositoryURL string) error {
-	if err := os.Setenv("GIT_ASKPASS", "echo"); err != nil {
-		return fmt.Errorf("Faild to set GIT_ASKPASS=echo, err: %s", err)
-	}
-	if err := os.Setenv("GIT_SSH", sshNoPromtFilePth); err != nil {
-		return fmt.Errorf("Faild to set GIT_SSH=%s, err: %s", sshNoPromtFilePth, err)
-	}
-
+func doGitAddRemote(repositoryURL string) error {
 	cmd := exec.Command("git", "remote", "add", "origin", repositoryURL)
 	cmd.Stdin = nil
 	cmd.Stdout = os.Stdout
@@ -75,14 +74,7 @@ func doGitAddRemote(sshNoPromtFilePth, repositoryURL string) error {
 	return cmd.Run()
 }
 
-func doGitFetch(sshNoPromtFilePth, pullRequestID, gitCheckoutParam string) error {
-	if err := os.Setenv("GIT_ASKPASS", "echo"); err != nil {
-		return fmt.Errorf("Faild to set GIT_ASKPASS=echo, err: %s", err)
-	}
-	if err := os.Setenv("GIT_SSH", sshNoPromtFilePth); err != nil {
-		return fmt.Errorf("Faild to set GIT_SSH=%s, err: %s", sshNoPromtFilePth, err)
-	}
-
+func doGitFetch(pullRequestID, gitCheckoutParam string) error {
 	args := []string{"fetch"}
 	if pullRequestID != "" {
 		args = append(args, "origin", "pull/"+pullRequestID+"/merge:"+gitCheckoutParam)
@@ -105,14 +97,7 @@ func doGitCheckout(gitCheckoutParam string) error {
 	return cmd.Run()
 }
 
-func doGitSubmodelueUpdate(sshNoPromtFilePth string) error {
-	if err := os.Setenv("GIT_ASKPASS", "echo"); err != nil {
-		return fmt.Errorf("Faild to set GIT_ASKPASS=echo, err: %s", err)
-	}
-	if err := os.Setenv("GIT_SSH", sshNoPromtFilePth); err != nil {
-		return fmt.Errorf("Faild to set GIT_SSH=%s, err: %s", sshNoPromtFilePth, err)
-	}
-
+func doGitSubmodelueUpdate() error {
 	cmd := exec.Command("git", "submodule", "update", "--init", "--recursive")
 	cmd.Stdin = nil
 	cmd.Stdout = os.Stdout
@@ -124,22 +109,28 @@ func doGitSubmodelueUpdate(sshNoPromtFilePth string) error {
 func getGitLog(formatParam string) (string, error) {
 	outBuffer := bytes.Buffer{}
 	errBuffer := bytes.Buffer{}
-	if err := RunCommandWithWriters(io.Writer(&outBuffer), io.Writer(&errBuffer),
-		"git", "log", "-1", "--format", formatParam); err != nil {
+
+	cmd := exec.Command("git", "log", "-1", "--format", formatParam)
+	cmd.Stdin = nil
+	cmd.Stdout = io.Writer(&outBuffer)
+	cmd.Stderr = io.Writer(&errBuffer)
+
+	if err := cmd.Run(); err != nil {
 		return "", fmt.Errorf("git log failed, err: %s, details: %s", err, errBuffer.String())
 	}
 	return outBuffer.String(), nil
+
 }
 
-func doGitClone(cloneIntoDir, privateKeyFilePth, repositoryURL, pullRequestID, gitCheckoutParam string) error {
+func doGitClone(cloneIntoDir, repositoryURL, pullRequestID, gitCheckoutParam string) error {
 	gitCheckPath := path.Join(cloneIntoDir, ".git")
-	if exist, err := IsPathExists(gitCheckPath); err != nil {
-		return err
+	if exist, err := isPathExists(gitCheckPath); err != nil {
+		return fmt.Errorf("Failed to file path (%s), err: %s", gitCheckPath, err)
 	} else if exist {
-		return fmt.Errorf(".git folder already exists in the destination dir at: %s", gitCheckPath)
+		return fmt.Errorf(".git folder already exists in the destination dir (%s)", gitCheckPath)
 	}
 
-	if err := os.Mkdir(cloneIntoDir, 0777); err != nil {
+	if err := os.MkdirAll(cloneIntoDir, 0777); err != nil {
 		return fmt.Errorf("Failed to create the clone_destination_dir at: %s", cloneIntoDir)
 	}
 
@@ -147,16 +138,11 @@ func doGitClone(cloneIntoDir, privateKeyFilePth, repositoryURL, pullRequestID, g
 		return fmt.Errorf("Could not init git repository, err: %s", cloneIntoDir)
 	}
 
-	sshNoPromptFile := "ssh_no_prompt.sh"
-	if privateKeyFilePth != "" {
-		sshNoPromptFile = "ssh_no_prompt_with_id.sh"
-	}
-
-	if err := doGitAddRemote(sshNoPromptFile, repositoryURL); err != nil {
+	if err := doGitAddRemote(repositoryURL); err != nil {
 		return fmt.Errorf("Could not add remote, err: %s", err)
 	}
 
-	if err := doGitFetch(sshNoPromptFile, pullRequestID, gitCheckoutParam); err != nil {
+	if err := doGitFetch(pullRequestID, gitCheckoutParam); err != nil {
 		return fmt.Errorf("Could not fetch from repository, err: %s", err)
 	}
 
@@ -165,7 +151,7 @@ func doGitClone(cloneIntoDir, privateKeyFilePth, repositoryURL, pullRequestID, g
 			return fmt.Errorf("Could not do checkout (%s), err: %s", gitCheckoutParam, err)
 		}
 
-		if err := doGitSubmodelueUpdate(sshNoPromptFile); err != nil {
+		if err := doGitSubmodelueUpdate(); err != nil {
 			return fmt.Errorf("Could not fetch from submodule repositories, err: %s", err)
 		}
 
@@ -243,36 +229,15 @@ func main() {
 
 	//
 	// Optional parameters
-	commit, err := validateRequiredInput("commit")
-	if err != nil {
-		log.Fatalf("Input validation failed, err: %s", err)
-	}
-	tag, err := validateRequiredInput("tag")
-	if err != nil {
-		log.Fatalf("Input validation failed, err: %s", err)
-	}
-	branch, err := validateRequiredInput("branch")
-	if err != nil {
-		log.Fatalf("Input validation failed, err: %s", err)
-	}
-	pullRequestID, err := validateRequiredInput("pull_request_id")
-	if err != nil {
-		log.Fatalf("Input validation failed, err: %s", err)
-	}
-	authSSHPrivateKey, err := validateRequiredInput("auth_ssh_private_key")
-	if err != nil {
-		log.Fatalf("Input validation failed, err: %s", err)
-	}
+	commit := os.Getenv("commit")
+	tag := os.Getenv("tag")
+	branch := os.Getenv("branch")
+	pullRequestID := os.Getenv("pull_request_id")
 
 	// Normalize input pathes
 	absCloneIntoDir, err := filepath.Abs(cloneIntoDir)
 	if err != nil {
 		log.Fatalf("Failed to expand path (%s), err: %s", cloneIntoDir, err)
-	}
-
-	privateKeyFilePth, err := writePrivateKeyToFile(authSSHPrivateKey)
-	if err != nil {
-		log.Fatalf("Failed to write private key to file, err: %s", err)
 	}
 
 	// Parse repo uri
@@ -297,7 +262,7 @@ func main() {
 		fmt.Println(" [!] No checkout parameter found")
 	}
 
-	if err := doGitClone(absCloneIntoDir, privateKeyFilePth, preparedRepoURL.String(), pullRequestID, gitCheckoutParam); err != nil {
+	if err := doGitClone(absCloneIntoDir, preparedRepoURL.String(), pullRequestID, gitCheckoutParam); err != nil {
 		log.Fatalf("git clone failed, err: %s", err)
 	}
 }

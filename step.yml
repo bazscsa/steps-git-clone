@@ -42,15 +42,11 @@ inputs:
     opts:
       title: "Pull request ID on GitHub"
       is_expand: true
-  - clone_into_dir: "$BITRISE_SOURCE_DIR"
+  - clone_into_dir:
     opts:
       title: "Clone destination (local) directory path"
       is_expand: true
       is_required: true
-  - auth_ssh_private_key: "$SSH_RSA_PRIVATE_KEY"
-    opts:
-      title: "Auth: SSH private key - without a passphrase!"
-      is_expand: true
 outputs:
   - GIT_CLONE_COMMIT_HASH:
     opts:
